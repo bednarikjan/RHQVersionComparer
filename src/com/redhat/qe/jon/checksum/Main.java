@@ -35,6 +35,10 @@ public class Main {
    private static final String fileName = "filesHash.txt";
 
    public static void main(String args[]) throws IOException {
+      if(args.length == 0){
+         logger.info("Param: Path to RHQ directory missing");
+         return;
+      }
       String baseDir = args[0];
       String ifCompare = null;
       if(args.length >1){
