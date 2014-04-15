@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -31,13 +30,15 @@ public class Main {
      *
      */
     private static final Logger logger = Logger.getLogger(Main.class.getName());
-    private static HashMap<String, String> jonFiles = new HashMap<String, String>();
+    private static HashMap<String, String> jonFilesNew = new HashMap<String, String>();
     private static HashMap<String, String> updateFiles = new HashMap<String, String>();
     private static final String fileName = "filesHash.txt";    
 
     private static int chanRemCount = 0;    
+    private static int chanRemNotBackedCount = 0;   
 
-    public static void main(String args[]) throws IOException {
+    public static void main(String args[]) throws IOException {                        
+        
         boolean findBackUp = false;
         String baseDirJon = new String();
         String baseDirUpdate = new String();        
@@ -54,31 +55,32 @@ public class Main {
             baseDirUpdate = args[1];
         }
 
-        getFiles(baseDirJon, jonFiles, (new File(baseDirJon)).getAbsolutePath().length() + 1);
+        getFiles(baseDirJon, jonFilesNew, (new File(baseDirJon)).getAbsolutePath().length() + 1, false);
 
         if (findBackUp) {
-            HashMap<String, String> oldFiles = readMapFromFile();
-            getFiles(baseDirUpdate, updateFiles, (new File(baseDirUpdate)).getAbsolutePath().length() + 1);
+            HashMap<String, String> jonFilesOld = readMapFromFile();            
+            getFiles(baseDirUpdate, updateFiles, (new File(baseDirUpdate)).getAbsolutePath().length() + 1, true);            
             
-            findBackupFiles(oldFiles);
+            findBackupFiles(jonFilesOld);
 
             System.out.println("Changed/removed files: " + chanRemCount);            
+            System.out.println("Changed/removed files NOT backed up: " + chanRemNotBackedCount);   
         } else {
             writeHashToFile();
         }
 
     }
 
-    public static void findBackupFiles(HashMap<String, String> oldMap) {        
-        for (Map.Entry<String, String> old : oldMap.entrySet()) {
+    public static void findBackupFiles(HashMap<String, String> jonFilesOld) {        
+        for (Map.Entry<String, String> old : jonFilesOld.entrySet()) {
             // file was modified or removed                        
-            if((jonFiles.containsKey(old.getKey()) && !old.getValue().equals(jonFiles.get(old.getKey()))) ||
-               !jonFiles.containsKey(old.getKey())) {              
+            if((jonFilesNew.containsKey(old.getKey()) && !old.getValue().equals(jonFilesNew.get(old.getKey()))) ||
+               !jonFilesNew.containsKey(old.getKey())) {              
                 
                 // check if the file is backed up
-                if(!updateFiles.containsKey(old.getKey()) || 
-                   !updateFiles.get(old.getKey()).equals(old.getValue())) {
+                if(!updateFiles.containsKey(old.getValue())) {
                     logger.info("File NOT backed up: " + old.getKey());
+                    chanRemNotBackedCount++;
                 }
                 
                 chanRemCount++;
@@ -107,7 +109,7 @@ public class Main {
     public static void writeHashToFile() throws IOException {
         FileWriter fw = new FileWriter(fileName);
         try {
-            for (Map.Entry<String, String> m : jonFiles.entrySet()) {
+            for (Map.Entry<String, String> m : jonFilesNew.entrySet()) {
                 fw.write(m.getKey() + "," + m.getValue() + "\n");
             }
         } finally {
@@ -116,17 +118,20 @@ public class Main {
 
     }   
     
-    public static void getFiles(String baseDir, HashMap<String, String> map, int pathToRemove) {
+    public static void getFiles(String baseDir, HashMap<String, String> map, int pathToRemove, boolean KeyIsHash) {
 
         File file = new File(baseDir);
         File[] files = file.listFiles();
 
         for (File f : files) {
             if (f.isDirectory()) {
-                getFiles(f.getAbsolutePath(), map, pathToRemove);
+                getFiles(f.getAbsolutePath(), map, pathToRemove, KeyIsHash);
             } else {
-                map.put(f.getAbsolutePath().substring(pathToRemove), checkSum(f.getAbsolutePath()));
-
+                if (KeyIsHash) {
+                    map.put(checkSum(f.getAbsolutePath()), f.getAbsolutePath().substring(pathToRemove));
+                } else {
+                    map.put(f.getAbsolutePath().substring(pathToRemove), checkSum(f.getAbsolutePath()));
+                }                
             }
         }
 
