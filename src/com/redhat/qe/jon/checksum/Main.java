@@ -32,28 +32,27 @@ public class Main {
     private static final Logger logger = Logger.getLogger(Main.class.getName());
     private static HashMap<String, String> jonFilesNew = new HashMap<String, String>();
     private static HashMap<String, String> updateFiles = new HashMap<String, String>();
-    private static final String fileName = "filesHash.txt";    
-
+    private static String fileName;    
+    private static String baseDirJon;
+    private static String baseDirUpdate;        
+    
     private static int chanRemCount = 0;    
     private static int chanRemNotBackedCount = 0;   
 
-    public static void main(String args[]) throws IOException {                        
+    public static void main(String args[]) throws IOException {                                
+        boolean findBackUp = false;        
         
-        boolean findBackUp = false;
-        String baseDirJon = new String();
-        String baseDirUpdate = new String();        
-        
-        if (args.length == 0) {
-            logger.info("Param: Path to RHQ directory missing");
+        if (args.length < 2 || args.length > 3) {
+            printUsage();
             return;
         }
-
-        baseDirJon = args[0];
-
-        if (args.length > 1) {
+        
+        fileName = args[0];
+        baseDirJon = args[1];        
+        if (args.length == 3) {
+            baseDirUpdate = args[2];
             findBackUp = true;
-            baseDirUpdate = args[1];
-        }
+        }               
 
         getFiles(baseDirJon, jonFilesNew, (new File(baseDirJon)).getAbsolutePath().length() + 1, false);
 
@@ -86,7 +85,6 @@ public class Main {
                 chanRemCount++;
             }
         }
-
     }
 
     public static HashMap<String, String> readMapFromFile() throws IOException {
@@ -161,5 +159,9 @@ public class Main {
         }
 
         return checksum;
+    }
+    
+    private static void printUsage() {
+        System.out.println("java -jar RHQVersionComparer.jar file pathToJon [pathToPatch]");        
     }
 }
